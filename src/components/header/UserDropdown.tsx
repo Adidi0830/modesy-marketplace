@@ -69,7 +69,7 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({ compact = false }) =
   // Profile selalu ada di urutan teratas untuk Member
   items.push(
     { label: "Profile", icon: User, href: "/profile" },
-    { label: "Wallet", icon: Wallet, href: "#wallet" },
+    { label: "Wallet", icon: Wallet, href: "/wallet" },
     { label: "Orders", icon: ShoppingBasket, href: "/orders" },
     { label: "My Coupons", icon: Tag, href: "#coupons" },
     { label: "Messages", icon: MessageSquare, href: "#messages" },
