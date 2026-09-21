@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useRef, useState } from "react";
-import { CloudUpload } from "lucide-react";
+import { CloudUpload, Plus, X, Star } from "lucide-react";
 
 export interface ImageFile {
   url: string;
@@ -14,12 +14,14 @@ interface ImageUploadProps {
 }
 
 export default function ImageUpload({ images, onChange }: ImageUploadProps) {
-  const inputRef = useRef<HTMLInputElement>(null);
+  const addInputRef = useRef<HTMLInputElement>(null);
+  const replaceInputRef = useRef<HTMLInputElement>(null);
+  const [replacingIndex, setReplacingIndex] = useState<number | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
-  const handleFiles = useCallback(
+  const handleAddFiles = useCallback(
     (files: FileList | null) => {
-      if (!files) return;
+      if (!files || files.length === 0) return;
       const newImages: ImageFile[] = Array.from(files).map((file) => ({
         url: URL.createObjectURL(file),
         file,
@@ -29,13 +31,29 @@ export default function ImageUpload({ images, onChange }: ImageUploadProps) {
     [images, onChange]
   );
 
+  const handleReplaceFiles = useCallback(
+    (files: FileList | null) => {
+      if (!files || files.length === 0 || replacingIndex === null) return;
+      const file = files[0];
+      const newImg: ImageFile = {
+        url: URL.createObjectURL(file),
+        file,
+      };
+      const updated = [...images];
+      updated[replacingIndex] = newImg;
+      onChange(updated);
+      setReplacingIndex(null);
+    },
+    [images, onChange, replacingIndex]
+  );
+
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault();
       setIsDragging(false);
-      handleFiles(e.dataTransfer.files);
+      handleAddFiles(e.dataTransfer.files);
     },
-    [handleFiles]
+    [handleAddFiles]
   );
 
   const handleRemove = (index: number) => {
@@ -49,13 +67,43 @@ export default function ImageUpload({ images, onChange }: ImageUploadProps) {
     onChange([selected, ...remaining]);
   };
 
+  const triggerReplace = (index: number) => {
+    setReplacingIndex(index);
+    if (replaceInputRef.current) {
+      replaceInputRef.current.value = "";
+      replaceInputRef.current.click();
+    }
+  };
+
   return (
-    <div>
+    <div className="w-full">
+      {/* Hidden file inputs */}
+      <input
+        ref={addInputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        className="hidden"
+        onChange={(e) => handleAddFiles(e.target.files)}
+      />
+      <input
+        ref={replaceInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => handleReplaceFiles(e.target.files)}
+      />
+
+      {/* Dashed Box Container */}
       <div
-        className={`flex flex-col items-center justify-center rounded-lg border-2 border-dashed bg-slate-50 p-8 transition-colors cursor-pointer ${
+        className={`w-full rounded-xl border-2 border-dashed transition-all duration-200 ${
           isDragging
-            ? "border-[#00C9A7] bg-teal-50"
-            : "border-slate-300 hover:border-slate-400"
+            ? "border-[#00C9A7] bg-[#f0fdfa]"
+            : "border-[#00C9A7]/80 bg-[#f4fbf9]/60 hover:bg-[#f0fdfa]/80"
+        } ${
+          images.length === 0
+            ? "flex min-h-[190px] cursor-pointer flex-col items-center justify-center p-6 text-center"
+            : "flex min-h-[220px] flex-col items-center justify-center p-6"
         }`}
         onDragOver={(e) => {
           e.preventDefault();
@@ -63,72 +111,109 @@ export default function ImageUpload({ images, onChange }: ImageUploadProps) {
         }}
         onDragLeave={() => setIsDragging(false)}
         onDrop={handleDrop}
-        onClick={() => inputRef.current?.click()}
-        role="button"
-        tabIndex={0}
-        aria-label="Upload images"
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") inputRef.current?.click();
-        }}
       >
-        <CloudUpload className="mb-3 h-10 w-10 text-slate-400" />
-        <p className="text-sm font-medium text-slate-600">
-          Drag and drop images here or{" "}
-          <span className="text-[#00C9A7] hover:underline">Browse files</span>
-        </p>
-        <input
-          ref={inputRef}
-          type="file"
-          accept="image/*"
-          multiple
-          className="hidden"
-          onChange={(e) => handleFiles(e.target.files)}
-        />
+        {images.length === 0 ? (
+          /* Empty state */
+          <div
+            onClick={() => addInputRef.current?.click()}
+            className="flex flex-col items-center justify-center"
+            role="button"
+            tabIndex={0}
+            aria-label="Upload images"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") addInputRef.current?.click();
+            }}
+          >
+            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-teal-50 text-[#00C9A7]">
+              <CloudUpload className="h-6 w-6" />
+            </div>
+            <p className="text-sm font-medium text-slate-700">
+              Drag and drop images here or{" "}
+              <span className="font-semibold text-[#00C9A7] hover:underline">
+                Browse files
+              </span>
+            </p>
+            <p className="mt-1 text-xs text-slate-400">
+              PNG, JPG, WEBP up to 5MB
+            </p>
+          </div>
+        ) : (
+          /* Uploaded images inside the dashed box */
+          <div className="flex w-full flex-wrap items-center justify-center gap-6">
+            {images.map(({ url }, idx) => (
+              <div
+                key={`${url}-${idx}`}
+                className="group flex flex-col items-center"
+              >
+                {/* Image card */}
+                <div className="relative h-28 w-28 overflow-hidden rounded-xl border border-slate-200/90 bg-white p-1 shadow-sm transition-all group-hover:shadow-md sm:h-32 sm:w-32">
+                  <img
+                    src={url}
+                    alt={`Upload ${idx + 1}`}
+                    className="h-full w-full rounded-lg object-cover"
+                  />
+
+                  {/* Remove button */}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRemove(idx);
+                    }}
+                    className="absolute top-1.5 right-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-rose-500 text-white shadow transition hover:bg-rose-600 focus:outline-none"
+                    aria-label={`Remove image ${idx + 1}`}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+
+                  {/* Main / Set Main button */}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSetMain(idx);
+                    }}
+                    title={idx === 0 ? "Main image" : "Click to set as main image"}
+                    className={`absolute bottom-1.5 left-1.5 flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-semibold transition ${
+                      idx === 0
+                        ? "bg-[#00C9A7] text-white shadow-sm"
+                        : "bg-black/65 text-white hover:bg-black/85"
+                    }`}
+                  >
+                    <Star className="h-2.5 w-2.5 fill-current" />
+                    {idx === 0 ? "Main" : "Set Main"}
+                  </button>
+                </div>
+
+                {/* Klik untuk mengganti gambar text */}
+                <button
+                  type="button"
+                  onClick={() => triggerReplace(idx)}
+                  className="mt-2.5 text-xs font-semibold text-[#00C9A7] transition hover:text-teal-700 hover:underline"
+                >
+                  Klik untuk mengganti gambar
+                </button>
+              </div>
+            ))}
+
+            {/* Add More slot if images already exist */}
+            <button
+              type="button"
+              onClick={() => addInputRef.current?.click()}
+              className="flex h-28 w-28 flex-col items-center justify-center rounded-xl border border-dashed border-teal-300 bg-white/70 text-slate-500 transition hover:border-[#00C9A7] hover:bg-white hover:text-[#00C9A7] sm:h-32 sm:w-32"
+            >
+              <Plus className="h-6 w-6" />
+              <span className="mt-1 text-xs font-medium">Tambah Foto</span>
+            </button>
+          </div>
+        )}
       </div>
 
-      {images.length > 0 && (
-        <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5">
-          {images.map(({ url }, idx) => (
-            <div key={`${url}-${idx}`} className="group relative aspect-square">
-              <img
-                src={url}
-                alt={`Upload ${idx + 1}`}
-                className="h-full w-full rounded-lg border border-slate-200 object-cover"
-              />
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleRemove(idx);
-                }}
-                className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white shadow transition hover:bg-rose-600"
-                aria-label={`Remove image ${idx + 1}`}
-              >
-                ✕
-              </button>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleSetMain(idx);
-                }}
-                title={idx === 0 ? "Main image" : "Click to set as main image"}
-                className={`absolute bottom-1 left-1 rounded px-1.5 py-0.5 text-[9px] font-semibold transition ${
-                  idx === 0
-                    ? "bg-[#00C9A7] text-white"
-                    : "bg-black/60 text-white hover:bg-black/80"
-                }`}
-              >
-                {idx === 0 ? "★ Main" : `Set Main`}
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-
-      <p className="mt-2 text-xs text-slate-400">
-        You can click on &apos;Set Main&apos; on any image to select the main image of your product.
+      {/* Helper text */}
+      <p className="mt-2.5 text-xs text-slate-500">
+        You can click on the &apos;Main&apos; button on the images to select the main image of your product
       </p>
     </div>
   );
 }
+
