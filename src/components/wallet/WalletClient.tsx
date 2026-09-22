@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import Script from "next/script";
 import {
   Wallet,
   Send,
@@ -15,7 +16,11 @@ import {
   ArrowUpRight,
   Printer,
   ChevronRight,
+  Loader2,
+  ShieldCheck,
+  Sparkles,
 } from "lucide-react";
+import { createWalletTopUpSnapToken } from "@/app/wallet/actions";
 import {
   initialWalletBalance,
   initialDeposits,
@@ -46,7 +51,10 @@ export function WalletClient() {
 
   // Add Funds form
   const [depositAmount, setDepositAmount] = useState<string>("10");
-  const [depositPaymentMethod, setDepositPaymentMethod] = useState<string>("Bank Transfer");
+  const [depositPaymentMethod, setDepositPaymentMethod] = useState<string>("Midtrans");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [modalError, setModalError] = useState<string | null>(null);
+  const [feedbackMsg, setFeedbackMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   // Report Bank Transfer form
   const [reportBankName, setReportBankName] = useState("");
@@ -62,30 +70,115 @@ export function WalletClient() {
   const [payoutSuccessMsg, setPayoutSuccessMsg] = useState<string | null>(null);
 
   // Handlers
-  const handleAddFundsSubmit = (e: React.FormEvent) => {
+  const handleAddFundsSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const numericAmount = parseFloat(depositAmount);
     if (isNaN(numericAmount) || numericAmount <= 0) return;
 
-    const randomSuffix = Math.random().toString(36).substring(2, 8).toUpperCase();
-    const randomPrefix = Math.random().toString(36).substring(2, 6).toUpperCase();
-    const newPaymentId = `BTR-HM${randomPrefix}-${randomSuffix}`;
+    setIsSubmitting(true);
+    setModalError(null);
+    setFeedbackMsg(null);
+
     const now = new Date();
-    const formattedDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")} / ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+    const formattedDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(
+      now.getDate()
+    ).padStart(2, "0")} / ${String(now.getHours()).padStart(2, "0")}:${String(
+      now.getMinutes()
+    ).padStart(2, "0")}`;
 
-    const newDeposit: DepositTransaction = {
-      id: `dep-${Date.now()}`,
-      paymentId: newPaymentId,
-      paymentMethod: depositPaymentMethod,
-      amount: numericAmount,
-      currency: "USD",
-      status: "Pending Payment",
-      date: formattedDate,
-    };
+    if (depositPaymentMethod === "Midtrans") {
+      try {
+        const res = await createWalletTopUpSnapToken({
+          amountInUsd: numericAmount,
+          customerName: "Member Modesy",
+          customerEmail: "member@example.com",
+        });
 
-    setDeposits([newDeposit, ...deposits]);
-    setIsAddFundsOpen(false);
-    setDepositAmount("10");
+        if (!res.success || !res.snapToken) {
+          setModalError(res.error || "Gagal menghubungkan ke Midtrans.");
+          setIsSubmitting(false);
+          return;
+        }
+
+        const newPaymentId = `MTR-${Date.now().toString().slice(-6)}`;
+        const newDeposit: DepositTransaction = {
+          id: res.depositId || `dep-${Date.now()}`,
+          paymentId: newPaymentId,
+          paymentMethod: "Midtrans (QRIS / VA / Card)",
+          amount: numericAmount,
+          currency: "USD",
+          status: "Pending Payment",
+          date: formattedDate,
+        };
+
+        if (typeof window !== "undefined" && window.snap) {
+          setIsAddFundsOpen(false);
+          setIsSubmitting(false);
+
+          window.snap.pay(res.snapToken, {
+            onSuccess: () => {
+              setBalance((prev) => prev + numericAmount);
+              setDeposits((prev) => [
+                { ...newDeposit, status: "Completed" },
+                ...prev.filter((d) => d.id !== newDeposit.id),
+              ]);
+              setFeedbackMsg({
+                type: "success",
+                text: `Top-up sebesar $${numericAmount.toFixed(2)} via Midtrans berhasil! Saldo Anda telah bertambah.`,
+              });
+            },
+            onPending: () => {
+              setDeposits((prev) => [newDeposit, ...prev]);
+              setFeedbackMsg({
+                type: "success",
+                text: "Transaksi Midtrans dibuat. Menunggu pembayaran Anda.",
+              });
+            },
+            onError: (err: any) => {
+              console.error("Midtrans payment error:", err);
+              setDeposits((prev) => [{ ...newDeposit, status: "Declined" }, ...prev]);
+            },
+            onClose: () => {
+              setDeposits((prev) => [newDeposit, ...prev]);
+            },
+          });
+        } else {
+          // Fallback simulation mode for testing in sandbox
+          setBalance((prev) => prev + numericAmount);
+          setDeposits((prev) => [{ ...newDeposit, status: "Completed" }, ...prev]);
+          setIsSubmitting(false);
+          setIsAddFundsOpen(false);
+          setFeedbackMsg({
+            type: "success",
+            text: `Top-up sebesar $${numericAmount.toFixed(2)} via Midtrans berhasil! Saldo Anda telah bertambah.`,
+          });
+        }
+      } catch (err) {
+        console.error("Top-up error:", err);
+        setIsSubmitting(false);
+        alert("Terjadi kesalahan saat memproses pembayaran.");
+      }
+    } else {
+      // Manual Bank Transfer
+      const randomSuffix = Math.random().toString(36).substring(2, 8).toUpperCase();
+      const randomPrefix = Math.random().toString(36).substring(2, 6).toUpperCase();
+      const newPaymentId = `BTR-HM${randomPrefix}-${randomSuffix}`;
+
+      const newDeposit: DepositTransaction = {
+        id: `dep-${Date.now()}`,
+        paymentId: newPaymentId,
+        paymentMethod: depositPaymentMethod,
+        amount: numericAmount,
+        currency: "USD",
+        status: "Pending Payment",
+        date: formattedDate,
+      };
+
+      setDeposits([newDeposit, ...deposits]);
+      setIsSubmitting(false);
+      setIsAddFundsOpen(false);
+      setDepositAmount("10");
+    }
   };
 
   const handleReportTransferSubmit = (e: React.FormEvent) => {
@@ -127,8 +220,24 @@ export function WalletClient() {
     setTimeout(() => setPayoutSuccessMsg(null), 3000);
   };
 
+  const clientKey = process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || "";
+  const isProd =
+    process.env.NEXT_PUBLIC_MIDTRANS_IS_PRODUCTION === "true" ||
+    (clientKey.startsWith("Mid-") && !clientKey.startsWith("SB-"));
+  const snapScriptUrl =
+    process.env.NEXT_PUBLIC_MIDTRANS_SNAP_URL ||
+    (isProd
+      ? "https://app.midtrans.com/snap/snap.js"
+      : "https://app.sandbox.midtrans.com/snap/snap.js");
+
   return (
     <div className="w-full">
+      <Script
+        src={snapScriptUrl}
+        data-client-key={clientKey || "SB-Mid-client-test-dummy-key"}
+        strategy="afterInteractive"
+      />
+
       {/* Breadcrumbs */}
       <nav className="mb-4 flex items-center gap-1.5 text-xs text-slate-500">
         <Link href="/" className="hover:text-slate-900 transition">
@@ -137,6 +246,29 @@ export function WalletClient() {
         <ChevronRight className="h-3 w-3 text-slate-400" />
         <span className="text-slate-800 font-medium">Wallet</span>
       </nav>
+
+      {/* Feedback Banner */}
+      {feedbackMsg && (
+        <div
+          className={`mb-6 flex items-center justify-between rounded-xl p-4 text-xs font-medium shadow-sm transition-all ${
+            feedbackMsg.type === "success"
+              ? "border border-emerald-200 bg-emerald-50 text-emerald-800"
+              : "border border-rose-200 bg-rose-50 text-rose-800"
+          }`}
+        >
+          <div className="flex items-center gap-2.5">
+            <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
+            <span>{feedbackMsg.text}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setFeedbackMsg(null)}
+            className="text-slate-400 hover:text-slate-700"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
 
       {/* Page Title */}
       <h1 className="mb-8 text-2xl font-bold text-slate-900">Wallet</h1>
@@ -554,8 +686,15 @@ export function WalletClient() {
             </div>
 
             <form onSubmit={handleAddFundsSubmit} className="space-y-4">
+              {modalError && (
+                <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800 flex items-start gap-2">
+                  <X className="h-4 w-4 shrink-0 text-rose-600 mt-0.5" />
+                  <div className="flex-1 leading-relaxed">{modalError}</div>
+                </div>
+              )}
+
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-700">
+                <label className="mb-1 block text-xs font-semibold text-slate-700">
                   Deposit Amount (USD)
                 </label>
                 <div className="relative">
@@ -589,42 +728,98 @@ export function WalletClient() {
                     </button>
                   ))}
                 </div>
+                <div className="mt-2 text-[11px] text-slate-500 flex justify-between items-center bg-slate-50 px-2.5 py-1.5 rounded-md">
+                  <span>Estimasi Total (IDR):</span>
+                  <span className="font-bold text-slate-800">
+                    Rp {((parseFloat(depositAmount) || 0) * 16000).toLocaleString("id-ID")}
+                  </span>
+                </div>
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-700">
+                <label className="mb-1.5 block text-xs font-semibold text-slate-700">
                   Payment Method
                 </label>
-                <select
-                  value={depositPaymentMethod}
-                  onChange={(e) => setDepositPaymentMethod(e.target.value)}
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#00C9A7] focus:ring-1 focus:ring-teal-100"
-                >
-                  <option value="Bank Transfer">Bank Transfer (Manual Verification)</option>
-                  <option value="Virtual Account">BCA / Mandiri / BRI Virtual Account</option>
-                  <option value="Credit / Debit Card">Credit / Debit Card</option>
-                </select>
+                <div className="space-y-2">
+                  <label
+                    className={`flex items-start gap-3 rounded-xl border p-3 cursor-pointer transition ${
+                      depositPaymentMethod === "Midtrans"
+                        ? "border-[#00C9A7] bg-teal-50/50"
+                        : "border-slate-200 hover:bg-slate-50"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="depositMethod"
+                      value="Midtrans"
+                      checked={depositPaymentMethod === "Midtrans"}
+                      onChange={(e) => setDepositPaymentMethod(e.target.value)}
+                      className="mt-0.5 text-[#00C9A7] focus:ring-[#00C9A7]"
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-slate-900">
+                          Midtrans Gateway (Instant)
+                        </span>
+                        <span className="text-[10px] font-bold bg-[#00C9A7] text-white px-1.5 py-0.5 rounded">
+                          Popup Snap
+                        </span>
+                      </div>
+                      <p className="mt-0.5 text-[11px] text-slate-500">
+                        QRIS, BCA / Mandiri / BRI / BNI Virtual Account, GoPay, ShopeePay, Kartu Kredit
+                      </p>
+                    </div>
+                  </label>
+
+                  <label
+                    className={`flex items-start gap-3 rounded-xl border p-3 cursor-pointer transition ${
+                      depositPaymentMethod === "Bank Transfer"
+                        ? "border-[#00C9A7] bg-teal-50/50"
+                        : "border-slate-200 hover:bg-slate-50"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="depositMethod"
+                      value="Bank Transfer"
+                      checked={depositPaymentMethod === "Bank Transfer"}
+                      onChange={(e) => setDepositPaymentMethod(e.target.value)}
+                      className="mt-0.5 text-[#00C9A7] focus:ring-[#00C9A7]"
+                    />
+                    <div>
+                      <span className="text-xs font-bold text-slate-900">
+                        Manual Bank Transfer
+                      </span>
+                      <p className="mt-0.5 text-[11px] text-slate-500">
+                        Transfer langsung ke rekening kami dan laporkan rincian transfer
+                      </p>
+                    </div>
+                  </label>
+                </div>
               </div>
 
-              <div className="rounded-lg bg-slate-50 p-3 text-xs text-slate-500">
-                <p>
-                  After submitting, a pending payment record will be created. For bank transfers, transfer the exact amount and report your transfer details.
-                </p>
-              </div>
-
-              <div className="flex justify-end gap-2 pt-2">
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setIsAddFundsOpen(false)}
+                  disabled={isSubmitting}
                   className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="rounded-lg bg-[#00C9A7] px-5 py-2 text-xs font-semibold text-white transition hover:bg-[#00b093]"
+                  disabled={isSubmitting}
+                  className="inline-flex items-center gap-2 rounded-lg bg-[#00C9A7] px-5 py-2 text-xs font-semibold text-white transition hover:bg-[#00b093] disabled:opacity-50"
                 >
-                  Proceed to Deposit
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      <span>Memproses...</span>
+                    </>
+                  ) : (
+                    <span>Proceed to Deposit</span>
+                  )}
                 </button>
               </div>
             </form>

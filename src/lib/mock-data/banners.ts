@@ -9,8 +9,8 @@ export const MOCK_HERO_BANNERS: Banner[] = [
   {
     id: "hero-1",
     title: "Buy Nice and Unique Clothes",
-    subtitle: "Explore our handpicked curation of modern fashion and accessories.",
-    cta_text: "Shop Now",
+    subtitle: "Discover quality premium basics and trendy essentials at surprisingly affordable prices",
+    cta_text: "Explore Now",
     cta_link: "#products",
     image_url: "https://noqapyqgjniunizkdicv.supabase.co/storage/v1/object/sign/hero_slide/slider_2560x800_6a94336760c054-95358530%20(1).webp?token=eyJraWQiOiJhZWI5ZWU0MS0xMWRmLTRkMTUtOGM1MC00ODM0MzgzYjVlY2EiLCJhbGciOiJIUzUxMiJ9.eyJ1cmwiOiJoZXJvX3NsaWRlL3NsaWRlcl8yNTYweDgwMF82YTk0MzM2NzYwYzA1NC05NTM1ODUzMCAoMSkud2VicCIsInNjb3BlIjoiZG93bmxvYWQiLCJpYXQiOjE3ODg5NjI2NjYsImV4cCI6MTgzOTkzODY2Nn0.J4dS9mCZcrswjUtMPso9vhHaAolILSBPiBaOVIpeRpcmTeFCRbFP5jFmxThcRSbyb8_wtTull-9IT8Wqos8tIg",
     tagline: "",

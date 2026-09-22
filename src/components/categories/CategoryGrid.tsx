@@ -10,7 +10,7 @@ export interface CategoryGridProps {
 
 /**
  * CategoryGrid Component
- * Menampilkan 12 kategori lingkaran (Mobile: 4 kolom x 3 baris, Desktop: 6 kolom x 2 baris)
+ * Menampilkan kategori lingkaran (Mobile: 3 kolom persis screenshot Modesy, Desktop: 6 kolom)
  */
 export const CategoryGrid: React.FC<CategoryGridProps> = ({ categories }) => {
   if (!categories || categories.length === 0) return null;
@@ -19,19 +19,18 @@ export const CategoryGrid: React.FC<CategoryGridProps> = ({ categories }) => {
     <section id="categories" className="py-4 sm:py-7">
       <Container>
         <SectionHeading
-          title="Shop by Category"
-          subtitle="Explore our wide variety of curated categories and departments"
+          title="Shop By Category"
           viewAllLabel="View All"
           viewAllHref="#all-categories"
         />
 
         {/* 
-          Grid 12 Kategori:
-          - Mobile (<640px): 4 kolom (3 baris rapi)
+          Grid Kategori:
+          - Mobile: 3 kolom (persis screenshot Modesy)
           - Tablet (sm): 4 kolom
-          - Desktop (md/lg): 6 kolom (2 baris)
+          - Desktop (md/lg): 6 kolom
         */}
-        <div className="grid grid-cols-4 gap-2.5 sm:gap-4 md:grid-cols-6 md:gap-y-6 md:gap-x-4">
+        <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 sm:gap-4 md:grid-cols-6 md:gap-y-6 md:gap-x-4">
           {categories.slice(0, 12).map((category) => (
             <div key={category.id} className="flex justify-center">
               <CategoryItem category={category} />

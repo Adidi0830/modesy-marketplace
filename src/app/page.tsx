@@ -50,7 +50,7 @@ export default async function Home() {
   ]);
 
   return (
-    <div className="min-h-screen bg-white text-neutral-900 pt-[105px] sm:pt-[120px] md:pt-[145px]">
+    <div className="min-h-screen bg-white text-neutral-900 pt-[52px] sm:pt-[56px] md:pt-[145px]">
       {/* 1. Header with TopBar, Search, and Category Bar */}
       <Header categories={categories} />
 

@@ -1,3 +1,5 @@
+"use client";
+
 import React from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -10,7 +12,7 @@ export interface HeroSlideItemProps {
 
 /**
  * HeroSlideItem Component
- * Slide tunggal dengan layout visual responsif sempurna di mobile & desktop
+ * Slide tunggal dengan layout visual responsif persis seperti screenshot Modesy
  */
 export const HeroSlideItem: React.FC<HeroSlideItemProps> = ({
   banner,
@@ -33,27 +35,27 @@ export const HeroSlideItem: React.FC<HeroSlideItemProps> = ({
       />
 
       {/* Konten Teks & Call-to-Action */}
-      <div className="relative z-10 flex h-full w-full items-center px-6 xs:px-8 sm:px-14 md:px-20 lg:px-24">
-        <div className="max-w-[220px] xs:max-w-xs sm:max-w-lg lg:max-w-xl">
+      <div className="relative z-10 flex h-full w-full items-center px-6 xs:px-10 sm:px-14 md:px-20 lg:px-24">
+        <div className="max-w-[280px] xs:max-w-xs sm:max-w-md md:max-w-lg lg:max-w-xl">
           {banner.tagline && (
-            <span className="mb-1.5 inline-block rounded-xs bg-emerald-600 px-2 py-0.5 text-[9px] font-bold tracking-wider text-white uppercase sm:mb-2 sm:px-2.5 sm:text-xs">
+            <span className="mb-2 inline-block rounded-xs bg-[#00a896] px-2 py-0.5 text-[10px] font-bold tracking-wider text-white uppercase sm:mb-2.5 sm:px-2.5 sm:text-xs">
               {banner.tagline}
             </span>
           )}
-          <h1 className="text-base font-extrabold tracking-tight text-white drop-shadow-md xs:text-lg sm:text-3xl md:text-4xl lg:text-5xl leading-tight">
+          <h1 className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-white drop-shadow-md leading-tight">
             {banner.title}
           </h1>
           {banner.subtitle && (
-            <p className="mt-1 text-[10px] text-white/95 drop-shadow-xs line-clamp-2 max-w-[200px] xs:max-w-xs sm:mt-2 sm:text-sm sm:max-w-md md:text-base">
+            <p className="mt-2 text-xs xs:text-sm sm:text-base text-white/95 drop-shadow-xs line-clamp-3 leading-relaxed">
               {banner.subtitle}
             </p>
           )}
-          <div className="mt-2.5 xs:mt-3 sm:mt-5 md:mt-6">
+          <div className="mt-4 sm:mt-6">
             <Link
               href={banner.cta_link}
-              className="inline-flex items-center justify-center rounded-xs bg-[#18181b] px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-white shadow-md transition hover:bg-black sm:px-5 sm:py-2.5 sm:text-xs md:text-sm"
+              className="inline-flex items-center justify-center rounded bg-[#222222] px-6 py-2.5 text-xs sm:text-sm font-bold text-white shadow-md transition hover:bg-black"
             >
-              <span>{banner.cta_text || "Shop Now"}</span>
+              <span>{banner.cta_text || "Explore Now"}</span>
             </Link>
           </div>
         </div>

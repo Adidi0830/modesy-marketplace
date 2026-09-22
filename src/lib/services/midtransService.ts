@@ -4,7 +4,11 @@ const MIDTRANS_SERVER_KEY =
   process.env.MIDTRANS_SERVER_KEY || "SB-Mid-server-test-dummy-key";
 const MIDTRANS_CLIENT_KEY =
   process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || "SB-Mid-client-test-dummy-key";
-const IS_PRODUCTION = process.env.MIDTRANS_IS_PRODUCTION === "true";
+
+// Otomatis deteksi production jika key tidak berawalan "SB-" (Sandbox)
+const IS_PRODUCTION =
+  process.env.MIDTRANS_IS_PRODUCTION === "true" ||
+  (MIDTRANS_SERVER_KEY.startsWith("Mid-") && !MIDTRANS_SERVER_KEY.startsWith("SB-"));
 
 const SNAP_API_URL = IS_PRODUCTION
   ? "https://app.midtrans.com/snap/v1/transactions"
@@ -59,9 +63,28 @@ export async function createMidtransSnapToken(
   params: CreateSnapTokenParams
 ): Promise<{ success: boolean; data?: SnapResponse; error?: string }> {
   try {
-    const authHeader = `Basic ${Buffer.from(`${MIDTRANS_SERVER_KEY}:`).toString(
-      "base64"
-    )}`;
+    const serverKey = (
+      process.env.MIDTRANS_SERVER_KEY ||
+      MIDTRANS_SERVER_KEY ||
+      ""
+    ).trim();
+
+    const isDummyKey =
+      !serverKey ||
+      serverKey.includes("dummy") ||
+      serverKey === "SB-Mid-server-test-dummy-key";
+
+    const isProd =
+      process.env.MIDTRANS_IS_PRODUCTION === "true" ||
+      (serverKey.startsWith("Mid-") && !serverKey.startsWith("SB-"));
+
+    const apiUrl = isProd
+      ? "https://app.midtrans.com/snap/v1/transactions"
+      : "https://app.sandbox.midtrans.com/snap/v1/transactions";
+
+    const defaultFinish = `${
+      process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"
+    }${params.orderId.startsWith("DEP-") ? "/wallet" : "/orders"}`;
 
     const payload = {
       transaction_details: {
@@ -74,13 +97,13 @@ export async function createMidtransSnapToken(
         secure: true,
       },
       callbacks: {
-        finish: `${
-          process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"
-        }/orders`,
+        finish: defaultFinish,
       },
     };
 
-    const response = await fetch(SNAP_API_URL, {
+    const authHeader = `Basic ${Buffer.from(`${serverKey}:`).toString("base64")}`;
+
+    const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -92,12 +115,21 @@ export async function createMidtransSnapToken(
 
     const data = await response.json();
 
-    if (!response.ok) {
-      console.warn("Midtrans API response error:", data);
-      // Fallback mock token for sandbox dev if dummy key is used
+    if (isDummyKey) {
       return {
         success: false,
-        error: data.error_messages ? data.error_messages.join(", ") : "Midtrans Error",
+        error:
+          "Kunci Midtrans belum diatur di .env.local. Harap tambahkan MIDTRANS_SERVER_KEY dan NEXT_PUBLIC_MIDTRANS_CLIENT_KEY dari akun Midtrans Sandbox Anda.",
+      };
+    }
+
+    if (!response.ok) {
+      console.warn("Midtrans API response error:", data);
+      return {
+        success: false,
+        error: data.error_messages
+          ? data.error_messages.join(", ")
+          : data.message || "Gagal membuat transaksi di Midtrans. Periksa Server Key Anda.",
       };
     }
 

@@ -1,6 +1,6 @@
 import React from "react";
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 /**
  * Props untuk SectionHeading
@@ -26,26 +26,28 @@ export const SectionHeading: React.FC<SectionHeadingProps> = ({
   subtitle,
   viewAllLabel = "View All",
   viewAllHref,
-  className = "mb-4 sm:mb-6",
+  className = "mb-3 sm:mb-6",
 }) => {
   return (
-    <div className={`flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between ${className}`}>
+    <div className={`flex items-center justify-between gap-2 ${className}`}>
       <div>
-        <h2 className="text-xl font-bold tracking-tight text-neutral-900 sm:text-2xl">
+        <h2 className="text-base sm:text-xl md:text-2xl font-bold tracking-tight text-neutral-900">
           {title}
         </h2>
         {subtitle && (
-          <p className="mt-1 text-xs text-neutral-500 sm:text-sm">{subtitle}</p>
+          <p className="mt-0.5 hidden text-xs text-neutral-500 sm:block sm:text-sm">
+            {subtitle}
+          </p>
         )}
       </div>
 
       {viewAllHref && (
         <Link
           href={viewAllHref}
-          className="inline-flex items-center text-xs font-semibold text-emerald-600 transition hover:text-emerald-700 sm:text-sm"
+          className="inline-flex items-center gap-1 text-xs sm:text-sm font-semibold text-neutral-800 transition hover:text-[#00a896]"
         >
-          {viewAllLabel}
-          <ChevronRight className="ml-1 h-4 w-4" />
+          <span>{viewAllLabel}</span>
+          <span aria-hidden="true">→</span>
         </Link>
       )}
     </div>

@@ -36,7 +36,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ banners }) => {
   if (!banners || banners.length === 0) return null;
 
   return (
-    <div className="relative h-[200px] w-full overflow-hidden bg-neutral-900 xs:h-[240px] sm:h-[300px] md:h-[380px] lg:h-[440px] xl:h-[480px]">
+    <div className="relative h-[360px] xs:h-[400px] sm:h-[450px] md:h-[480px] lg:h-[520px] w-full overflow-hidden bg-neutral-900">
       {/* List Slide Banner */}
       {banners.map((banner, index) => (
         <HeroSlideItem
@@ -46,22 +46,22 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ banners }) => {
         />
       ))}
 
-      {/* Kontrol Navigasi Prev & Next */}
+      {/* Kontrol Navigasi Prev & Next (Lingkaran putih transparan seperti screenshot) */}
       {banners.length > 1 && (
         <>
           <button
             onClick={handlePrev}
             aria-label="Previous Slide"
-            className="absolute top-1/2 left-2 z-20 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-xs transition hover:bg-black/70 sm:left-6 sm:h-10 sm:w-10"
+            className="absolute top-1/2 left-2 z-20 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white/40 text-neutral-800 backdrop-blur-xs transition hover:bg-white/70 sm:left-6 sm:h-10 sm:w-10 shadow-xs"
           >
-            <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
+            <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5 stroke-[2.5]" />
           </button>
           <button
             onClick={handleNext}
             aria-label="Next Slide"
-            className="absolute top-1/2 right-2 z-20 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-xs transition hover:bg-black/70 sm:right-6 sm:h-10 sm:w-10"
+            className="absolute top-1/2 right-2 z-20 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white/40 text-neutral-800 backdrop-blur-xs transition hover:bg-white/70 sm:right-6 sm:h-10 sm:w-10 shadow-xs"
           >
-            <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
+            <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5 stroke-[2.5]" />
           </button>
 
           {/* Dots Indicator */}
@@ -73,7 +73,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ banners }) => {
                 aria-label={`Go to slide ${idx + 1}`}
                 className={`h-1.5 rounded-full transition-all sm:h-2 ${
                   idx === currentIndex
-                    ? "w-5 bg-emerald-500 sm:w-6"
+                    ? "w-5 bg-[#00a896] sm:w-6"
                     : "w-1.5 bg-white/60 hover:bg-white sm:w-2"
                 }`}
               />
