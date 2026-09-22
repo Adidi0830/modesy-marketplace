@@ -128,7 +128,13 @@ export function WalletClient() {
           date: formattedDate,
         };
 
-        if (!res.isSimulated && typeof window !== "undefined" && window.snap) {
+        const isRealMidtransToken =
+          !res.isSimulated &&
+          res.snapToken &&
+          !res.snapToken.startsWith("SIM-") &&
+          !res.snapToken.startsWith("MOCK-");
+
+        if (isRealMidtransToken && typeof window !== "undefined" && window.snap) {
           setIsAddFundsOpen(false);
           setIsSubmitting(false);
 
