@@ -5,10 +5,7 @@ const MIDTRANS_SERVER_KEY =
 const MIDTRANS_CLIENT_KEY =
   process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || "SB-Mid-client-test-dummy-key";
 
-// Otomatis deteksi production jika key tidak berawalan "SB-" (Sandbox)
-const IS_PRODUCTION =
-  process.env.MIDTRANS_IS_PRODUCTION === "true" ||
-  (MIDTRANS_SERVER_KEY.startsWith("Mid-") && !MIDTRANS_SERVER_KEY.startsWith("SB-"));
+const IS_PRODUCTION = process.env.MIDTRANS_IS_PRODUCTION === "true";
 
 const SNAP_API_URL = IS_PRODUCTION
   ? "https://app.midtrans.com/snap/v1/transactions"
@@ -74,9 +71,7 @@ export async function createMidtransSnapToken(
       serverKey.includes("dummy") ||
       serverKey === "SB-Mid-server-test-dummy-key";
 
-    const isProd =
-      process.env.MIDTRANS_IS_PRODUCTION === "true" ||
-      (serverKey.startsWith("Mid-") && !serverKey.startsWith("SB-"));
+    const isProd = process.env.MIDTRANS_IS_PRODUCTION === "true";
 
     const apiUrl = isProd
       ? "https://app.midtrans.com/snap/v1/transactions"

@@ -311,9 +311,7 @@ export function WalletClient() {
   };
 
   const clientKey = process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || "";
-  const isProd =
-    process.env.NEXT_PUBLIC_MIDTRANS_IS_PRODUCTION === "true" ||
-    (clientKey.startsWith("Mid-") && !clientKey.startsWith("SB-"));
+  const isProd = process.env.NEXT_PUBLIC_MIDTRANS_IS_PRODUCTION === "true";
   const snapScriptUrl =
     process.env.NEXT_PUBLIC_MIDTRANS_SNAP_URL ||
     (isProd
