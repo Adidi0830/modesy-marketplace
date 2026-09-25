@@ -278,31 +278,59 @@ export function CheckoutClient() {
       if (
         (selectedPaymentMethod === "midtrans" || selectedPaymentMethod === "qris" || selectedPaymentMethod === "transfer") &&
         result.snapToken &&
-        typeof window !== "undefined" &&
-        window.snap
+        !result.snapToken.startsWith("SIM-")
       ) {
-        window.snap.pay(result.snapToken, {
-          onSuccess: async () => {
-            await clearCart();
-            setOrderSuccess(true);
-            setIsLoading(false);
-          },
-          onPending: async () => {
-            await clearCart();
-            setOrderSuccess(true);
-            setIsLoading(false);
-          },
-          onError: (err: any) => {
-            console.error("Midtrans payment error:", err);
-            setErrorMsg("Pembayaran gagal atau dibatalkan.");
-            setIsLoading(false);
-          },
-          onClose: async () => {
-            await clearCart();
-            setOrderSuccess(true);
-            setIsLoading(false);
-          },
-        });
+        const clientKey = process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || "";
+        const isProd = process.env.NEXT_PUBLIC_MIDTRANS_IS_PRODUCTION === "true";
+        const snapUrl =
+          process.env.NEXT_PUBLIC_MIDTRANS_SNAP_URL ||
+          (isProd
+            ? "https://app.midtrans.com/snap/snap.js"
+            : "https://app.sandbox.midtrans.com/snap/snap.js");
+
+        let snapReady = typeof window !== "undefined" && !!window.snap;
+        if (!snapReady && typeof window !== "undefined") {
+          await new Promise<void>((resolve) => {
+            let script = document.querySelector('script[src*="snap.js"]') as HTMLScriptElement;
+            if (!script) {
+              script = document.createElement("script");
+              script.src = snapUrl;
+              script.setAttribute("data-client-key", clientKey || "");
+              script.async = true;
+              document.body.appendChild(script);
+            }
+            script.onload = () => resolve();
+            script.onerror = () => resolve();
+            setTimeout(resolve, 1500);
+          });
+          snapReady = typeof window !== "undefined" && !!window.snap;
+        }
+
+        if (typeof window !== "undefined" && window.snap) {
+          window.snap.pay(result.snapToken, {
+            onSuccess: async () => {
+              await clearCart();
+              setOrderSuccess(true);
+              setIsLoading(false);
+            },
+            onPending: async () => {
+              await clearCart();
+              setOrderSuccess(true);
+              setIsLoading(false);
+            },
+            onError: (err: any) => {
+              console.error("Midtrans payment error:", err);
+              setErrorMsg("Pembayaran gagal atau dibatalkan.");
+              setIsLoading(false);
+            },
+            onClose: async () => {
+              await clearCart();
+              setOrderSuccess(true);
+              setIsLoading(false);
+            },
+          });
+          return;
+        }
       } else {
         await clearCart();
         setOrderSuccess(true);

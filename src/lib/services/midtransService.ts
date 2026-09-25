@@ -64,12 +64,20 @@ export async function createMidtransSnapToken(
       process.env.MIDTRANS_SERVER_KEY ||
       MIDTRANS_SERVER_KEY ||
       ""
-    ).trim();
+    ).replace(/["']/g, "").trim();
 
     const isDummyKey =
       !serverKey ||
       serverKey.includes("dummy") ||
       serverKey === "SB-Mid-server-test-dummy-key";
+
+    if (isDummyKey) {
+      return {
+        success: false,
+        error:
+          "Kunci Midtrans belum diatur di Environment Variables. Harap tambahkan MIDTRANS_SERVER_KEY dan NEXT_PUBLIC_MIDTRANS_CLIENT_KEY.",
+      };
+    }
 
     const isProd = process.env.MIDTRANS_IS_PRODUCTION === "true";
 
@@ -109,14 +117,6 @@ export async function createMidtransSnapToken(
     });
 
     const data = await response.json();
-
-    if (isDummyKey) {
-      return {
-        success: false,
-        error:
-          "Kunci Midtrans belum diatur di .env.local. Harap tambahkan MIDTRANS_SERVER_KEY dan NEXT_PUBLIC_MIDTRANS_CLIENT_KEY dari akun Midtrans Sandbox Anda.",
-      };
-    }
 
     if (!response.ok) {
       console.warn("Midtrans API response error:", data);

@@ -134,6 +134,25 @@ export function WalletClient() {
           !res.snapToken.startsWith("SIM-") &&
           !res.snapToken.startsWith("MOCK-");
 
+        let snapReady = typeof window !== "undefined" && !!window.snap;
+        if (isRealMidtransToken && !snapReady && typeof window !== "undefined") {
+          // Dynamically load snap.js if not ready
+          await new Promise<void>((resolve) => {
+            let script = document.querySelector('script[src*="snap.js"]') as HTMLScriptElement;
+            if (!script) {
+              script = document.createElement("script");
+              script.src = snapScriptUrl;
+              script.setAttribute("data-client-key", clientKey || "");
+              script.async = true;
+              document.body.appendChild(script);
+            }
+            script.onload = () => resolve();
+            script.onerror = () => resolve();
+            setTimeout(resolve, 1500);
+          });
+          snapReady = typeof window !== "undefined" && !!window.snap;
+        }
+
         if (isRealMidtransToken && typeof window !== "undefined" && window.snap) {
           setIsAddFundsOpen(false);
           setIsSubmitting(false);
